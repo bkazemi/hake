@@ -1,50 +1,53 @@
+var _ = require('underscore');
+var Q = require('q');
 var Nightmare = require('nightmare');
-var cheerio = require('cheerio');
+//var sitesJSON = require('./sites.json');
+
 var nightmare = new Nightmare({ loadImages : false });
-var site = {
-    name : 'Kmart',
-    baseUrl : 'http://www.kmart.com',
-    departments : [
-        {
-            name : 'Toys 50% discount',
-            url : 'http://www.kmart.com/toys-games&50/b-20007?filter=discount&subCatView=true&viewItems=50'
-        },
-        {
-            name : 'Home, Bed and Bath 50% discount',
-            url : 'http://www.kmart.com/home-bed-bath&50/b-1348478556?filter=discount&subCatView=true&viewItems=50'
-        }
-    ],
-    selectors : {
-        next : '#bottom-pagination-next > a',
-        init : '#cards-holder .card-container',
-        group : '#cards-holder',
-        item : {
-            container : '.card-container',
-            name : '.card-title a',
-            url : '.card-title a',
-            price : '.card-price',
-            oldPrice : 'card-old-price',
-            upc : '',
-            dimensions : '',
-            weight : ''
+var promises = [],
+    site = {
+        name : 'Kmart',
+        baseUrl : 'http://www.kmart.com',
+        departments : [
+            {
+                name : 'Toys 50% discount',
+                url : 'http://www.kmart.com/toys-games&50/b-20007?filter=discount&subCatView=true&viewItems=50'
+            },
+            {
+                name : 'Home, Bed and Bath 50% discount',
+                url : 'http://www.kmart.com/home-bed-bath&50/b-1348478556?filter=discount&subCatView=true&viewItems=50'
+            }
+        ],
+        selectors : {
+            next : '#bottom-pagination-next > a',
+            init : '#cards-holder .card-container',
+            group : '#cards-holder',
+            item : {
+                container : '.card-container',
+                name : '.card-title a',
+                url : '.card-title a',
+                price : '.card-price',
+                oldPrice : 'card-old-price',
+                upc : '',
+                dimensions : '',
+                weight : ''
+            }
         }
     }
-}
 
-function priceMeetsThreshold (argument) {
-    // body...
-}
-
-function scrape (site, $) {
-    var start = new Date(),
+function scrape (site, departmentIndex) {
+    var d = Q.defer(),
+        start = new Date(),
         end;
 
     nightmare
-    .goto(site.departments[1].url)
+    .goto(site.departments[departmentIndex].url)
     .wait(site.selectors.init)
     .scrollTo(200, 0) // in case scrolling loads more items
-    .evaluate(function (site, cheerio) {
+    .evaluate(function (site, departmentIndex, d) {
+
         // Executed in browser scope
+
         var items = [],
             $next = document.querySelector(site.selectors.next),
             nextHref = '';
@@ -61,7 +64,7 @@ function scrape (site, $) {
                 oldPrice = item.querySelector(site.selectors.item.oldPrice);
                 mappedItems.push({
                     name : name ? name.textContent : '',
-                    url : url ? url.getAttribute('href') : '',
+                    url : url ? site.baseUrl + url.getAttribute('href') : '',
                     price : price ? price.textContent : '',
                     oldPrice : oldPrice ? oldPrice.textContent : ''
                 });
@@ -74,23 +77,40 @@ function scrape (site, $) {
                 }
             }
 
-            return JSON.stringify(mappedItems);
+            return mappedItems;
         }, function (items) {
+
             // Executed in Node scope
-            console.log(items);
-        }, site, cheerio
+
+            // Done scraping, resolve promise and pass results along
+            d.resolve(items);
+        }, site, departmentIndex, d
     )
     .run(function (err, nightmare) {
         if(err) {
             console.log(err);
         }
         end = new Date();
-        console.log('Done in ' + (end.valueOf() - start.valueOf()) / 1000 + ' seconds.');
+        console.log('Loach done in ' + (end.valueOf() - start.valueOf()) / 1000 + ' seconds.');
     });
+
+    return d.promise;
 }
 
-/*for each site
-  for each department
-*/
-scrape(site);
+function getResults () {
+    _.each(sitesJSON, function (site) {
+        _.each(site.departments, function (dept, index) {
+            promises.push(scrape(site, index));
+        });
+    });
+
+    return Q.all(promises);
+}
+
+module.exports = function () {
+    return {
+        getResults : getResults
+    }
+}
+
 

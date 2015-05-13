@@ -10,31 +10,31 @@ Websites to scrape are defined in sites.json in the following format
 ```json
 [
     {
-        name : 'Kmart',
-        baseUrl : 'http://www.kmart.com',
-        departments : [
+        "name" : "Kmart",
+        "baseUrl" : "http://www.kmart.com",
+        "departments" : [
             {
-                name : 'Toys 50% discount',
-                url : 'http://www.kmart.com/toys-games&50/b-20007?filter=discount&subCatView=true&viewItems=50'
+                "name" : "Toys 50% discount",
+                "url" : "http://www.kmart.com/toys-games&50/b-20007?filter=discount&subCatView=true&viewItems=50"
             },
             {
-                name : 'Home, Bed and Bath 50% discount',
-                url : 'http://www.kmart.com/home-bed-bath&50/b-1348478556?filter=discount&subCatView=true&viewItems=50'
+                "name" : "Home, Bed and Bath 50% discount",
+                "url" : "http://www.kmart.com/home-bed-bath&50/b-1348478556?filter=discount&subCatView=true&viewItems=50"
             }
         ],
-        selectors : {
-            next : '#bottom-pagination-next > a',
-            init : '#cards-holder .card-container',
-            group : '#cards-holder',
-            item : {
-                container : '.card-container',
-                name : '.card-title a',
-                url : '.card-title a',
-                price : '.card-price',
-                oldPrice : 'card-old-price',
-                upc : '',
-                dimensions : '',
-                weight : ''
+        "selectors" : {
+            "next" : "#bottom-pagination-next > a",
+            "init" : "#cards-holder .card-container",
+            "group" : "#cards-holder",
+            "item" : {
+                "container" : ".card-container",
+                "name" : ".card-title a",
+                "url" : ".card-title a",
+                "price" : ".card-price",
+                "oldPrice" : "card-old-price",
+                "upc" : "",
+                "dimensions" : "",
+                "weight" : """
             }
         }
     }
@@ -46,10 +46,10 @@ Loach exports JSON that is an array of objects representing promising products t
 ```json
 [
     {
-        name : 'Product Name',
-        url : 'http://www.example.com/product',
-        price : 12.99,
-        oldPrice : 34.99
+        "name" : "Product Name",
+        "url" : "http://www.example.com/product",
+        "price" : 12.99,
+        "oldPrice" : 34.99
     }
 ]
 ```
