@@ -54,43 +54,25 @@ Loach exports JSON that is an array of objects representing promising products t
 ]
 ```
 
-Phase 2 : Bijan gets to pick name (bottom feeder fish such as Bream, Haddock, Pleco, Shovelnose, etc.)
+### Phase 2 : Shovelnose
 
-Phase 2 takes in Loach's exported JSON as input and looks at the potential products' listings on Amazon to determine if they are worth purchasing.
+Shovelnose takes Loach's exported JSON as input and looks at the products' listings on Amazon to determine if any are worth purchasing.
 
-** Bijan to add notes here regarding implementation details, selection process (3x price multiple, sales rank), and export format. **
+Amazon will be picked through using NightmareJS to search for the items that Loach feeds to Shovelnose. Once an item has been searched for, if there are results on Amazon, Shovelnose will store a temporary object to hold the products' information. The first thing stored in this object is the result's ASIN. Shovelnose then takes the ASIN to look for the product's personal page. This page will then be sorted through to find the item's price. If the price is low enough, Shovelnose will continue searching for the Amazon ranking and dimensions. If the Amazon ranking is low enough, this rank is given it's own ranking. This preference will be able to be set by the user in a future release. After collecting necessary information for the item, Shovelnose then appends the temporary object's properties to the object provided by Loach. When all items are processsed, Shovelnose returns a JSON string structurally the same as Loach's, with the additional information shown below. The format for such follows in this example:
 
-## Style Guide
-
-### Code
-- Indent four (4) spaces, no tabs. Mapping tab key to 'insert 4 spaces' in IDE is recommended.
-- Module level: declare global variables first, then functions.
-- One 'var' declaration followed by comma-delimited list of variables.
-- Opening function brace on same line as function signature.
-
-```javascript
-var a = 1,
-    b = "example",
-    c = { name : "Simple Object" };
-
-function calculateSomething() {
-    var value = 1,
-        something = value + a;
-    console.log(something);
-}
-
-calculateSomething();
+```json
+[
+    {
+        "(Loach properties)" : "...",
+        "asin" : "ABC123",
+        "AMZname" : "Example toy",
+        "AMZprice" : "10.00",
+        "AMZdimensions" : "5 ounces",
+        "AMZupc" : "a long number",
+        "AMZrank" : "#1 in Toys & Games #10 in Toys & Games > Subcategory",
+        "AMZrankIs" : "ideal"
+    }
+]
 ```
 
-### Git
-- Short, descriptive title (50 chars max) summarizing the contents of the change.
-- Followed by more detailed paragraphs describing each major part of the commit. Not needed for small commits.
-
-```git
-Update Toys R Us site.json template
-
-Modify sites.json to reflect toysrus.com's changes to url structure and
-css selectors. This is a short paragraph but it will usually be longer
-because commits are usually longer and more involved than this.
-But not always.
-```
+If Shovelnose fails to get any of this information, with the exception of the UPC, it will remove the item from the array.
