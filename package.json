@@ -1,0 +1,11 @@
+{
+    "name" : "Sieve",
+    "version" : "0.0.1",
+    "description" : "Feeding off of the bottom",
+    "dependencies" : {
+        "underscore" : "1.8.3",
+        "q" : "1.4.0",
+        "nightmare" : "1.8.0"
+    },
+    "private" : true
+}
