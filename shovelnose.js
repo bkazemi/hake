@@ -60,6 +60,7 @@ function search(item, searchq)
                 if (item.asin) {
                     /* search was successful, continue to individual page */
                     nm
+                    .useragent('Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0') // ensure no mobile page
                     .goto('http://www.amazon.com/dp/' + item.asin)
                     .wait()
                     .evaluate(function(item) {
