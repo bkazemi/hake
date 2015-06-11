@@ -1,14 +1,27 @@
 /* sieve.js - start program */
 
-var common = require('./common.js');
+var common    = require('./common.js'),
+    instances = null;
 
-if (process.argv[2])
-    for (var i = 2; i < process.argv.length; i++) {
+if (process.argv[2]) {
+    for (var i = process.argv.length-1; i >= 2; --i)
         switch (process.argv[i]) {
             case '-h' :
                 usage();
+            case '-V' :
+                version();
+        }
+    for (i = 2; i < process.argv.length; i++)
+        switch (process.argv[i]) {
             case '-d' :
                 common.set_debug(true);
+                break;
+            case '-i' :
+                instances = parseInt(process.argv[++i]);
+                if (!instances && instances !== 0)
+                    return console.log('`-i\' requires a number');
+                else if (instances < 1)
+                    return console.log('invalid number for `-i' + "'");
                 break;
             case '-lf' :
                 process.argv[++i] ? process.argv[i][0] !== '-' ?
@@ -17,27 +30,39 @@ if (process.argv[2])
                 : common.set_debug(true, true);
                 break;
             default :
-                console.log('unrecognized option: `' + process.argv[i] + "'");
+                console.log('invalid option: `' + process.argv[i] + "'");
                 process.exit(1);
         }
-    }
+}
 
 function usage()
 {
-    console.log('sieve.js - A FBA scraper\n\n' +
+    console.log('sieve.js - An FBA scraper\n\n' +
                 'usage: node ' + process.argv[1] + ' [options]\n\n' +
                 'options:\n' +
-                '-d           turn on debugging\n' +
-                '-lf  [file]  log debug messages to file\n' +
-                '-h           this info'
+                '-d             turn on debugging\n' +
+                '-lf  <file>    log debug messages to file\n' +
+                '-i   <number>  specify Nightmare instances\n' +
+                '-V             show version info\n' +
+                '-h             this info'
                );
     process.exit(0);
 }
 
-var shovelnose = require('./shovelnose.js'), // needs to be require'd after for set_debug to kick in
-    dbg = new common.Debug('sieve.js');
+function version()
+{
+    console.log('sieve-0.0.1\n' +
+                '(C) 2015 Bijan & Cyrus Kazemi-Shirkadeh\n' +
+                '<{b,cyrus}@shirkadeh.org>'
+               );
+    process.exit(0);
+}
 
-shovelnose.then(function(r) {
+var Shovelnose = require('./shovelnose.js'), // needs to be require'd after for set_debug to kick in
+    shovelnose = new Shovelnose(),
+    dbg        = new common.Debug('sieve.js');
+
+shovelnose.getResults(instances).then(function(r) {
     dbg.log('ret', r);
     process.exit(0);
 });

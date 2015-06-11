@@ -1,7 +1,9 @@
 var _ = require('underscore');
 var Q = require('q');
 var Nightmare = require('nightmare');
-//var sitesJSON = require('./sites.json');
+var sitesJSON = require('./sites.json');
+var common = require('./common.js');
+var dbg = new common.Debug('loach.js');
 
 var nightmare = new Nightmare({ loadImages : false });
 var promises = [],
@@ -88,10 +90,10 @@ function scrape (site, departmentIndex) {
     )
     .run(function (err, nightmare) {
         if(err) {
-            console.log(err);
+            dbg.log(err);
         }
         end = new Date();
-        console.log('Loach done in ' + (end.valueOf() - start.valueOf()) / 1000 + ' seconds.');
+        dbg.log('scrape' , 'Loach done in ' + (end.valueOf() - start.valueOf()) / 1000 + ' seconds.' , true);
     });
 
     return d.promise;
@@ -103,7 +105,6 @@ function getResults () {
             promises.push(scrape(site, index));
         });
     });
-
     return Q.all(promises);
 }
 
@@ -112,5 +113,3 @@ module.exports = function () {
         getResults : getResults
     }
 }
-
-

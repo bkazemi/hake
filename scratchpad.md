@@ -56,7 +56,7 @@ cons: No free plan, low hardware specs; 512 MB of RAM and a single CPU, small di
 ## Using common.js
 
 ### Debug('string')
-The Debug constructor is used to print debugging messages to stderr, and in the future, to a log file. It works exclusively in the Node.js environment.
+The Debug constructor is used to print debugging messages to stderr or a log file. It works exclusively in the Node.js environment.
 Debug takes one optional string argument that registers the name of the program the debugger is printing from. This is included in the debugger output.
 
 To include it in other javascript files, you must first use the require function to bring in common.js. After it is required, you then create a new instance of Debug.
@@ -64,7 +64,7 @@ To include it in other javascript files, you must first use the require function
 var common = require('./common.js');
 var debug = new common.Debug('example.js');
 ```
-### Debug.prototype.set_debug(boolean, 'string' or boolean)
+### set_debug(boolean, 'string' or boolean)
 After you have it required, you register the debugger with the set_debug() function, included in common.js. set_debug takes two arguments. For the first argument, true allows for the debugger to print, and false disables all functionality. The second argument is used to tell where to log the debug messages. The string specifies the file to log to. A boolean is used to log to the default logname. To log to a file from the command line, the `lf' switch has been added. When using this switch, specify a filename to use relative to the CWD. If no argument is used with this switch, the default name will be used. The default can be changed by modifying the LOGDEF variable in common.js.
 ```javascript
 common.set_debug(true); // activates the debugger
@@ -77,6 +77,8 @@ If log is called with only one argument, no replacement takes place and the stri
 debug.log('A sample debugging message');
 // -> debug:: example.js: A sample debugging message
 ```
+### Debug.prototype.error('string', 'string', boolean)
+The error method is functionally identical to log, except for the fact that it outputs red text in the console. This is useful for differentiating between error messages and regular output.
 ### Registering a function with Debug
 To get the debugger to print the name of the function in the output, you register the name of the function at the beginning of each function in a variable named `freg'. This is nothing bulletproof at the moment, and may need overriding at times.
 ```javascript
