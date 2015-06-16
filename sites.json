@@ -6,10 +6,6 @@
             {
                 "name" : "Toys 50% discount",
                 "url" : "http://www.kmart.com/toys-games&50/b-20007?filter=discount&subCatView=true&viewItems=50"
-            },
-            {
-                "name" : "Home, Bed and Bath 50% discount",
-                "url" : "http://www.kmart.com/home-bed-bath&50/b-1348478556?filter=discount&subCatView=true&viewItems=50"
             }
         ],
         "selectors" : {

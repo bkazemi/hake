@@ -1,7 +1,6 @@
 /* shovelnose.js - pass item(s) to amazon */
 
 var Nm     = require('nightmare'),
-    nm     = new Nm({ loadImages : false }),
     //-------------
     _      = require('underscore'),
     Q      = require('q'),
@@ -12,45 +11,47 @@ var Nm     = require('nightmare'),
     common = require('./common.js'),
     dbg    = new common.Debug('shovelnose.js'),
     //-------------
-    first  = true, items, i; // function specific variables
+    first  = true, items, pnmq = Q.defer(); // function specific variables
 
-module.exports = 
-loach.getResults().then(function(results) {
-    var res = _.flatten(results);
-    return process_next(res);
-});
-
-function search(item, searchq)
-{
+var Search = function(multi, arr, lastidx) {
+    this.first = true;
+    this.searchq = Q.defer();
+    this.nm = new Nm({ loadImages : false });
+    if (multi) {
+        this.multi = multi;
+        this.arr = arr;
+        this.arridx = 0;
+        this.last = lastidx;
+    }
+};
+Search.prototype.instance = function(item) {
     dbg.freg = 'search';
-    if (first)
-        var searchq = Q.defer();
+    var t = this;
 
     if (item !== undefined) {
-        nm
+        t.nm
+        .useragent('Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0') // ensure no mobile page
         .goto('http://www.amazon.com')
         .type('input[id="twotabsearchtextbox"]', item.name)
         .click('input[value="Go"]')
-        .wait()
-        .evaluate(function(item, searchq) {
+        .wait('#atfResults')
+        .evaluate(function(item, t) {
             if (document.querySelector('#noResultsTitle')) // item not found
                 return null;
-            /* get first result*/
+            /* get first result */
             var pr = document.querySelector('#s-results-list-atf').childNodes[0],
                 asin;
             if (pr.textContent.trimLeft().substr(0,(26 + item.name.length))
                     === 'Video shorts related to "' + item.name + '"')
                 pr = pr.parentNode.childNodes[1]; // first result was video container, skip it
-            asin = pr.getAttribute('data-asin') || '';
-            return asin;
+            return asin = pr.getAttribute('data-asin') || '';
             }, function(ret) {
-                   if (ret) {
-                       dbg.log('search for item: `' + item.name + '\' successful');
-                       item.asin = ret;
-                       return;
-                   } 
-                   dbg.log('search for item: `' + item.name + '\' unsuccessful');
-                   return items[items.indexOf(item)] = null;
+                if (ret) {
+                    dbg.log('search for item: `' + item.name + '\' successful');
+                    return item.asin = ret;
+                }
+                dbg.log('search for item: `' + item.name + '\' unsuccessful');
+                return items[t.tmpidx = items.indexOf(item)] = null;
             }, item)
             .run(function(err, nm) {
                 if (err) {
@@ -62,51 +63,47 @@ function search(item, searchq)
                     nm
                     .useragent('Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0') // ensure no mobile page
                     .goto('http://www.amazon.com/dp/' + item.asin)
-                    .wait()
-                    .evaluate(function(item) {
-                        var name, retobj = {};
-                        if (name = document.querySelector('#productTitle'))
-                            retobj.AMZname = name.textContent;
-                        else if (name = document.querySelector('#btAsinTitle'))
+                    .wait('#productTitle')
+                    .evaluate(function(item, t) {
+                        var retobj = {},
+                            new_prod_format = false;
+                        var name = document.querySelector('#productTitle')
+                                || document.querySelector('#btAsinTitle')
+                                || null;
+                        if (name)
                             retobj.AMZname = name.textContent;
                         else
-                            return null;
-                        var price;
-                        if (price = document.querySelector('#priceblock_ourprice')) // regular format
-                            retobj.AMZprice = price.textContent;
-                        else if (price = document.querySelector('#priceblock_saleprice')) // sale
-                            retobj.AMZprice = price.textContent;
-                        else if (price = document.querySelector('#actualPriceValue')) // large price
-                            retobj.AMZprice = price.textContent;
+                            return 'failed at name query';
+                        var price = document.querySelector('#priceblock_ourprice') // regular format
+                            || document.querySelector('#priceblock_saleprice') // sale
+                            || document.querySelector('#actualPriceValue') // large price
+                            || null;
+                        if (price) {
+                            price = parseFloat(price.textContent.replace('$', ''));
+                            item.price = parseFloat(item.price.toLocaleString().replace('$',''));
+                            retobj.AMZprice = price;
+                        }
                         else
-                            return 'fails at price query';
-                        price = price.textContent.replace('$', '');
-                        typeof(item.price) === 'string' ?
-                            item.price = item.price.replace('$', '')
-                            : item.price = item.price.toLocaleString().replace('$', '');
+                            return 'failed at price query';
                         if ((price / item.price) >= 3) { // good, get rest of info
-                            var rank, details = document.querySelector('#detail-bullets'); 
+                            var details = document.querySelector('#detail-bullets'),
+                                rankquery;
                             if (!details) {
                                 details = document.querySelector('#prodDetails'); // new product format
-                                if (!details) return 'fails at detail query';
-                                var d2 = true;
+                                if (!details) return 'failed at detail query';
+                                new_prod_format = true;
                             }
-                            retobj.AMZprice = price;
-                            if (rank = details.querySelector('#SalesRank')) {
-                                var match;
-                                if (match = rank.textContent.match(/(#\d+).*(\s.*)in.*/g)) {
-                                    for (var i = 0; i < match.length; i++) {
-                                        match[i] = match[i].replace(/\(.*\)/, ''); // get rid of `(See Top 100 in ...)'
-                                        match[i] = match[i].replace(/[^(.*\d)]\s*in/, ' in');
-                                        match[i].trimRight().trimLeft();
-                                    }
-                                    retobj.AMZrank = match.join(' ');
-                                } else
-                                    return 'fails at rank regexp';
-                            }
-                            var rankranking;
-                            if (rank && (rankranking = match[0].match(/#(\d+,?)+/)[0].toLocaleString().substr(1))) {
-                                rankranking = rankranking.replace(/,/g,'');
+                            if (rankquery = details.querySelector('#SalesRank')) {
+                                var rank = /(#\d+).*(\s.*)in.*/.exec(rankquery.textContent)[0].replace(/\s*\(.*\)/, ''); // get rid of `(See Top 100 in ...)'
+                                if (rank)
+                                    retobj.AMZrank = rank;
+                                else
+                                    return 'failed at rank regexp';
+                            } else
+                                  return 'failed at sales rank query';
+
+                            var rankranking = parseInt(/#(\d+,?)+/.exec(rank)[0].replace(/[#,]/g,''));
+                            if (rankranking) {
                                 if (rankranking < 50000)
                                     retobj.AMZrankIs = 'ideal';
                                 else if (rankranking < 100000)
@@ -114,15 +111,15 @@ function search(item, searchq)
                                 else if (rankranking < 200000)
                                     retobj.AMZrankIs = 'fair';
                                 else
-                                   return 'toss'; // toss it
+                                    return 'toss'; // toss it
                             } else
-                                return 'fails at rankranking regexp';
+                                return 'failed at rankranking regexp';
                         } else
-                            return 'fails at price division';
-                        if (d2) {
+                            return 'failed at price division';
+                        if (new_prod_format) {
                             var key;
                             if (!(key = details.getElementsByClassName('label')))
-                                return 'fails to get labels';
+                                return 'failed to get labels';
                             retobj.AMZdimensions = '';
                             for (var i = 0; i < key.length; i++) {
                                 switch (key[i].textContent) {
@@ -143,8 +140,8 @@ function search(item, searchq)
                                 return 'failed to get dimensions in product table';
                             return retobj;
                         }
-                        var dim;
-                        if (dim = details.getElementsByTagName('li')) 
+                        var dim = details.getElementsByTagName('li');
+                        if (dim)
                             for (var i = 0; i < dim.length; i++) {
                                 if (dim[i].textContent.match('Product Dimensions:')) {
                                     retobj.AMZdimensions = /\d.+/.exec(dim[i].textContent)[0]
@@ -155,67 +152,153 @@ function search(item, searchq)
                                     return retobj;
                                 }
                             }
-                        return 'fails at end';
-                    }, function(det) {
-                        if (det) {
-                            if (det === 'toss') {
-                                items[items.indexOf(item)] = null;
-                                return item = null;
-                                }
-                            else if (typeof det === 'string') {
-                                dbg.log('`' + item.name + "'" + ' nightmare .eval', det, true);
-                                items[items.indexOf(item)] = null;
-                                return item = null;
+                        return 'failed at end';
+                    }, function(fate) {
+                        if (fate) {
+                            if (fate === 'toss')
+                                return item = items[t.tmpidx = items.indexOf(item)] = null;
+                            else if (typeof fate === 'string') {
+                                fate === 'failed at price division' ?
+                                 dbg.log('`' + item.name + "'" + ' nightmare .eval', fate, true)
+                                 : dbg.error('`' + item.name + "'" + ' nightmare .eval', fate, true);
+                                return item = items[t.tmpidx = items.indexOf(item)] = null;
                             }
-                            detkeys = Object.keys(det);
+                            detkeys = Object.keys(fate);
                             for (var i = 0; i < detkeys.length; i++)
-                                item[detkeys[i]] = det[detkeys[i]];
-                            return det;
+                                item[detkeys[i]] = fate[detkeys[i]];
+                            return fate;
                         }
-                        dbg.log('failed to get info of item `' + item.name + "'");
-                        items[items.indexOf(item)] = null;
-                        return item = null;
+                        dbg.error('failed to get info of item `' + item.name + "'");
+                        return item = items[t.tmpidx = items.indexOf(item)] = null;
                     }, item)
-                    .run(function(err, nm) {
+                    .run(function(err) {
                         if (err)
                             throw err;
-                        if (item) dbg.log('successfully processed item: `' + item.name + "'");
+                        if (item) {
+                            dbg.log('successfully processed item: `' + item.name + "'");
+                            t.tmpidx = items.indexOf(item);
+                        }
                         /* find subsequent items recursively */
-                        var next;
-                        if (next = process_next())
-                            return search(next, searchq);
-                        searchq.resolve(JSON.stringify(items));
+                        if (t.multi) {
+                            var next = process_next_multi(null, null, t.tmpidx, t.arridx === t.last, items.indexOf(t.arr[t.arridx+1]));
+                            if (next) {
+                                dbg.error('NEXT',t.tmpidx+'E');
+                                ++t.arridx;
+                                return t.instance(next);
+                            }
+                            return t.searchq.resolve();
+                        }
+                        var next = process_next(null, t.tmpidx);
+                        if (next)
+                            return t.instance(next);
+                        return t.searchq.resolve(JSON.stringify(items));
                     });
                     return;
                 }
                 /* add recursion outside of if blk in case last item's search is unsuccessful */
-                var next;
-                if (next = process_next())
-                    return search(next, searchq);
-                searchq.resolve(JSON.stringify(items));
+                if (t.multi) {
+                    var next = process_next_multi(null, null, t.tmpidx, t.arridx === t.last, items.indexOf(t.arr[t.arridx+1]));
+                    if (next) {
+                        ++t.arridx;
+                        return t.instance(next);
+                    }
+                    return t.searchq.resolve();
+                }
+                var next = process_next(null, t.tmpidx);
+                if (next)
+                    return t.instance(next);
+                return t.searchq.resolve(JSON.stringify(items));
            });
-           if (first) {
-               first = !first; 
-               return searchq.promise;
+           if (this.first) {
+               this.first = !this.first;
+               return this.searchq.promise;
            } else
-                 return;
+                return;
     } else {
-          dbg.log('loach returned NULL');
-          return searchq.resolve(null);
+        dbg.error('fell through, something went wrong'); // shouldn't get here
+        return this.searchq.resolve(null);
     }
-}
+};
 
-function process_next(init)
+function process_next(init, idx)
 {
     if (init) {
-        var promises = []; 
-        items = init, i = 0,
-        promises.push(search(items[i]));
+        var promises = [];
+        items = init,
+        promises.push(new Search(false, null).instance(items[0]));
         return Q.all(promises);
     }
-    if (!items[i]) {
-        items.splice(i, 1);
-        return items[i] ? items[i] : null;
+
+    if (!items[idx]) {
+        items.splice(idx, 1);
+        return items[idx] ? items[idx] : null;
     }
-    return items[++i] ? items[i] : null;
+    return items[++idx] ? items[idx] : null;
 }
+
+function process_next_multi(num, init, idx, islast, nextidx)
+{
+    if (init) {
+        if (!init.length) {
+            dbg.error('loach returned NULL');
+            return null;
+        }
+        if (num > init.length) {
+            console.log('too many instances requested!');
+            return null;
+        }
+        var promises = [];
+        items = init;
+        for (var i = 0; i < num; i++)
+            this['nmarr' + i] = [];
+        for (i = 0; i < init.length; i += num)
+            for (var j = 0; j < num; j++)
+                if (i+j < init.length)
+                    this['nmarr' + j].push(init[i+j]);
+        for (i = 0; i < num; i++)
+            promises.push((new Search(true, this['nmarr' + i], this['nmarr' + i].length-1)).instance(this['nmarr' + i][0]));
+        promises.push(pnmq.promise);
+
+        return Q.all(promises);
+    }
+    dbg.error('num: '+num+' | init: '+init+' | idx: '+idx+' | islast: '+islast+' | nextidx: '+nextidx+'END');
+    return !islast ? items[nextidx]
+    : items[++idx] !== undefined ? null
+      : function() {
+            dbg.error('end');
+            pnmq.resolve();
+            return null;
+      }();
+}
+
+function getResults(num)
+{
+    if (num > 1) {
+        return loach.getResults()
+               .then(function(results) {
+                   var res = _.flatten(results);
+                   return process_next_multi(num, res).then(function() {
+                      dbg.error('veryend');
+                      var i = 0, itemslen = items.length;
+                      while (i < itemslen) {
+                          if (!items[i]) {
+                              items.splice(i, 1);
+                              --itemslen;
+                              continue;
+                          }
+                          ++i;
+                      }
+                      return JSON.stringify(items);
+                  });
+              });
+    }
+    return loach.getResults()
+           .then(function(results) {
+               var res = _.flatten(results);
+               return process_next(res);
+          });
+}
+
+module.exports = function() {
+    return { getResults : getResults };
+};

@@ -66,10 +66,10 @@ Amazon will be picked through using NightmareJS to search for the items that Loa
         "(Loach properties)" : "...",
         "asin" : "ABC123",
         "AMZname" : "Example toy",
-        "AMZprice" : "10.00",
+        "AMZprice" : 10.00,
         "AMZdimensions" : "5 ounces",
         "AMZupc" : "a long number",
-        "AMZrank" : "#1 in Toys & Games #10 in Toys & Games > Subcategory",
+        "AMZrank" : "#1 in Toys & Games",
         "AMZrankIs" : "ideal"
     }
 ]
