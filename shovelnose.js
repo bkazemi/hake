@@ -182,7 +182,6 @@ Search.prototype.instance = function(item) {
                         if (t.multi) {
                             var next = process_next_multi(null, null, t.tmpidx, t.arridx === t.last, items.indexOf(t.arr[t.arridx+1]));
                             if (next) {
-                                dbg.error('NEXT',t.tmpidx+'E');
                                 ++t.arridx;
                                 return t.instance(next);
                             }
@@ -215,7 +214,7 @@ Search.prototype.instance = function(item) {
            } else
                 return;
     } else {
-        dbg.error('fell through, something went wrong'); // shouldn't get here
+        dbg.error('fell through, something went wrong', 4); // shouldn't get here
         return this.searchq.resolve(null);
     }
 };
@@ -223,6 +222,10 @@ Search.prototype.instance = function(item) {
 function process_next(init, idx)
 {
     if (init) {
+        if (!init.length) {
+            dbg.error('loach returned NULL', 4);
+            return null;
+        }
         var promises = [];
         items = init,
         promises.push(new Search(false, null).instance(items[0]));
@@ -240,11 +243,11 @@ function process_next_multi(num, init, idx, islast, nextidx)
 {
     if (init) {
         if (!init.length) {
-            dbg.error('loach returned NULL');
+            dbg.error('loach returned NULL', 4);
             return null;
         }
         if (num > init.length) {
-            console.log('too many instances requested!');
+            console.error('too many instances requested!');
             return null;
         }
         var promises = [];
@@ -261,11 +264,9 @@ function process_next_multi(num, init, idx, islast, nextidx)
 
         return Q.all(promises);
     }
-    dbg.error('num: '+num+' | init: '+init+' | idx: '+idx+' | islast: '+islast+' | nextidx: '+nextidx+'END');
     return !islast ? items[nextidx]
     : items[++idx] !== undefined ? null
       : function() {
-            dbg.error('end');
             pnmq.resolve();
             return null;
       }();
@@ -278,7 +279,6 @@ function getResults(num)
                .then(function(results) {
                    var res = _.flatten(results);
                    return process_next_multi(num, res).then(function() {
-                      dbg.error('veryend');
                       var i = 0, itemslen = items.length;
                       while (i < itemslen) {
                           if (!items[i]) {

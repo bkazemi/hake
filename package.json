@@ -1,6 +1,6 @@
 {
-    "name" : "Sieve",
-    "version" : "0.0.1",
+    "name" : "sievejs",
+    "version" : "0.1.0",
     "description" : "Feeding off of the bottom",
     "dependencies" : {
         "underscore" : "1.8.3",

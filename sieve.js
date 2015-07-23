@@ -1,7 +1,8 @@
 /* sieve.js - start program */
 
 var common    = require('./common.js'),
-    instances = null;
+    instances = null,
+    inum      = null;
 
 if (process.argv[2]) {
     for (var i = process.argv.length-1; i >= 2; --i)
@@ -11,13 +12,17 @@ if (process.argv[2]) {
             case '-V' :
                 version();
         }
-    for (i = 2; i < process.argv.length; i++)
+    for (i = 2; i < process.argv.length; i++) {
+        if (/^-i[0-9]+$/.exec(process.argv[i])) {
+            inum = process.argv[i].substr(2);
+            process.argv[i] = '-i';
+        }
         switch (process.argv[i]) {
             case '-d' :
                 common.set_debug(true);
                 break;
             case '-i' :
-                instances = parseInt(process.argv[++i]);
+                instances = parseInt(inum ? inum : process.argv[++i]);
                 if (!instances && instances !== 0)
                     return console.log('`-i\' requires a number');
                 else if (instances < 1)
@@ -33,6 +38,7 @@ if (process.argv[2]) {
                 console.log('invalid option: `' + process.argv[i] + "'");
                 process.exit(1);
         }
+    }
 }
 
 function usage()
@@ -51,7 +57,7 @@ function usage()
 
 function version()
 {
-    console.log('sieve-0.0.1\n' +
+    console.log('sieve-0.1.0\n' +
                 '(C) 2015 Bijan & Cyrus Kazemi-Shirkadeh\n' +
                 '<{b,cyrus}@shirkadeh.org>'
                );

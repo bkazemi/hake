@@ -77,8 +77,16 @@ If log is called with only one argument, no replacement takes place and the stri
 debug.log('A sample debugging message');
 // -> debug:: example.js: A sample debugging message
 ```
-### Debug.prototype.error('string', 'string', boolean)
-The error method is functionally identical to log, except for the fact that it outputs red text in the console. This is useful for differentiating between error messages and regular output.
+### Debug.prototype.error('string', 'string' or number, boolean)
+The error method is functionally identical to log, except for the fact that it outputs red text in the console. This is useful for differentiating between error messages and regular output. A number in the second parameter allows you to specify how severe the error is. The options are as follows:
+
+- 0 - Don't output error type
+- 1 - Note
+- 2 - Warning
+- 3 - Error
+- 4 - Fatal
+
+The default output is `Error'
 ### Registering a function with Debug
 To get the debugger to print the name of the function in the output, you register the name of the function at the beginning of each function in a variable named `freg'. This is nothing bulletproof at the moment, and may need overriding at times.
 ```javascript
