@@ -82,9 +82,9 @@ Search.prototype.instance = function(item) {
                             price = parseFloat(price.textContent.replace('$', ''));
                             item.price = parseFloat(item.price.toLocaleString().replace('$',''));
                             retobj.AMZprice = price;
-                        }
-                        else
+                        } else {
                             return 'failed at price query';
+                        }
                         if ((price / item.price) >= 3) { // good, get rest of info
                             var details = document.querySelector('#detail-bullets'),
                                 rankquery;
@@ -99,23 +99,27 @@ Search.prototype.instance = function(item) {
                                     retobj.AMZrank = rank;
                                 else
                                     return 'failed at rank regexp';
-                            } else
-                                  return 'failed at sales rank query';
+                            } else {
+                                return '2failed at sales rank query';
+                            }
 
                             var rankranking = parseInt(/#(\d+,?)+/.exec(rank)[0].replace(/[#,]/g,''));
                             if (rankranking) {
-                                if (rankranking < 50000)
+                                if (rankranking < 50000) {
                                     retobj.AMZrankIs = 'ideal';
-                                else if (rankranking < 100000)
+                                } else if (rankranking < 100000) {
                                     retobj.AMZrankIs = 'good';
-                                else if (rankranking < 200000)
+                                } else if (rankranking < 200000) {
                                     retobj.AMZrankIs = 'fair';
-                                else
+                                } else {
                                     return 'toss'; // toss it
-                            } else
+                                }
+                            } else {
                                 return 'failed at rankranking regexp';
-                        } else
+                            }
+                        } else {
                             return 'failed at price division';
+                        }
                         if (new_prod_format) {
                             var key;
                             if (!(key = details.getElementsByClassName('label')))
@@ -146,8 +150,7 @@ Search.prototype.instance = function(item) {
                                 if (dim[i].textContent.match('Product Dimensions:')) {
                                     retobj.AMZdimensions = /\d.+/.exec(dim[i].textContent)[0]
                                     return retobj;
-                                }
-                                else if (dim[i].textContent.match('Shipping Weight')) {
+                                } else if (dim[i].textContent.match('Shipping Weight')) {
                                     retobj.AMZdimensions += /^.*\d+ \w+/.exec(dim[i].textContent)[0];
                                     return retobj;
                                 }
@@ -155,12 +158,15 @@ Search.prototype.instance = function(item) {
                         return 'failed at end';
                     }, function(fate) {
                         if (fate) {
-                            if (fate === 'toss')
+                            if (fate === 'toss') {
                                 return item = items[t.tmpidx = items.indexOf(item)] = null;
-                            else if (typeof fate === 'string') {
-                                fate === 'failed at price division' ?
-                                 dbg.log('`' + item.name + "'" + ' nightmare .eval', fate, true)
-                                 : dbg.error('`' + item.name + "'" + ' nightmare .eval', fate, true);
+                            } else if (typeof fate === 'string') {
+                                /* XXX is there a cleaner way to do this? */
+                                var lore = fate === 'failed at price division' ? 'log' : 'error',
+                                    level = lore === 'error' ? (Number(fate[0]) || 3) // may not specify level 3 in str
+                                          : ''
+                                dbg[lore]('`' + item.name + "'" + ' nightmare .eval() ' +
+                                    ((Number(level) && level !== 3) ? fate.substr(1) : fate) , level);
                                 return item = items[t.tmpidx = items.indexOf(item)] = null;
                             }
                             detkeys = Object.keys(fate);
@@ -180,7 +186,9 @@ Search.prototype.instance = function(item) {
                         }
                         /* find subsequent items recursively */
                         if (t.multi) {
-                            var next = process_next_multi(null, null, t.tmpidx, t.arridx === t.last, items.indexOf(t.arr[t.arridx+1]));
+                            var next = process_next_multi(null, null, t.tmpidx,
+                                                          t.arridx === t.last,
+                                                          items.indexOf(t.arr[t.arridx+1]));
                             if (next) {
                                 ++t.arridx;
                                 return t.instance(next);
@@ -196,7 +204,9 @@ Search.prototype.instance = function(item) {
                 }
                 /* add recursion outside of if blk in case last item's search is unsuccessful */
                 if (t.multi) {
-                    var next = process_next_multi(null, null, t.tmpidx, t.arridx === t.last, items.indexOf(t.arr[t.arridx+1]));
+                    var next = process_next_multi(null, null, t.tmpidx,
+                                                  t.arridx === t.last,
+                                                  items.indexOf(t.arr[t.arridx+1]));
                     if (next) {
                         ++t.arridx;
                         return t.instance(next);
@@ -211,8 +221,9 @@ Search.prototype.instance = function(item) {
            if (this.first) {
                this.first = !this.first;
                return this.searchq.promise;
-           } else
-                return;
+           } else {
+               return;
+           }
     } else {
         dbg.error('fell through, something went wrong', 4); // shouldn't get here
         return this.searchq.resolve(null);
@@ -259,7 +270,8 @@ function process_next_multi(num, init, idx, islast, nextidx)
                 if (i+j < init.length)
                     this['nmarr' + j].push(init[i+j]);
         for (i = 0; i < num; i++)
-            promises.push((new Search(true, this['nmarr' + i], this['nmarr' + i].length-1)).instance(this['nmarr' + i][0]));
+            promises.push((new Search(true, this['nmarr' + i], this['nmarr' + i].length-1))
+                                   .instance(this['nmarr' + i][0]));
         promises.push(pnmq.promise);
 
         return Q.all(promises);

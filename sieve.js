@@ -44,10 +44,10 @@ if (process.argv[2]) {
 function usage()
 {
     console.log('sieve.js - An FBA scraper\n\n' +
-                'usage: node ' + process.argv[1] + ' [options]\n\n' +
+                'usage: node ' + process.argv[1].replace(/.*\//,'') + ' [options]\n\n' +
                 'options:\n' +
                 '-d             turn on debugging\n' +
-                '-lf  <file>    log debug messages to file\n' +
+                '-lf  [file]    log debug messages to file\n' +
                 '-i   <number>  specify Nightmare instances\n' +
                 '-V             show version info\n' +
                 '-h             this info'
@@ -58,7 +58,7 @@ function usage()
 function version()
 {
     console.log('sieve-0.1.0\n' +
-                '(C) 2015 Bijan & Cyrus Kazemi-Shirkadeh\n' +
+                '© 2015 Bijan & Cyrus Kazemi-Shirkadeh\n' +
                 '<{b,cyrus}@shirkadeh.org>'
                );
     process.exit(0);
