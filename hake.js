@@ -1,4 +1,4 @@
-/* sieve.js - start program */
+/* hake.js - start program */
 
 var common    = require('./common.js'),
     instances = null,
@@ -43,7 +43,7 @@ if (process.argv[2]) {
 
 function usage()
 {
-    console.log('sieve.js - An FBA scraper\n\n' +
+    console.log('hake.js - An FBA scraper\n\n' +
                 'usage: node ' + process.argv[1].replace(/.*\//,'') + ' [options]\n\n' +
                 'options:\n' +
                 '-d             turn on debugging\n' +
@@ -57,16 +57,17 @@ function usage()
 
 function version()
 {
-    console.log('sieve-0.1.0\n' +
+    console.log('hake-0.1.0\n' +
                 '© 2015 Bijan & Cyrus Kazemi-Shirkadeh\n' +
                 '<{b,cyrus}@shirkadeh.org>'
                );
     process.exit(0);
 }
 
-var Shovelnose = require('./shovelnose.js'), // needs to be require'd after for set_debug to kick in
+/* SN needs to be require'd after for set_debug to kick in */
+var Shovelnose = require('./shovelnose.js'),
     shovelnose = new Shovelnose(),
-    dbg        = new common.Debug('sieve.js');
+    dbg        = new common.Debug('hake.js');
 
 shovelnose.getResults(instances).then(function(r) {
     dbg.log('ret', r);

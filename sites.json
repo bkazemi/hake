@@ -9,7 +9,6 @@
             }
         ],
         "selectors" : {
-            "next" : "#bottom-pagination-next > a",
             "init" : "#cards-holder .card-container",
             "group" : "#cards-holder",
             "item" : {
@@ -17,10 +16,31 @@
                 "name" : ".card-title a",
                 "url" : ".card-title a",
                 "price" : ".card-price",
-                "oldPrice" : "card-old-price",
+                "oldPrice" : ".card-old-price",
                 "upc" : "",
                 "dimensions" : "",
                 "weight" : ""
+            }
+        }
+    },
+    {
+        "name" : "Walmart",
+        "baseUrl" : "http://www.walmart.com",
+        "departments" : [
+            {
+                "name" : "Savings Center - Toys",
+                "url" : "http://www.walmart.com/browse/toys/4171?facet=special_offers:Special Buy||special_offers:Clearance||special_offers:Rollback&povid=1094688+|+contentZone1+|+20"
+            }
+        ],
+        "selectors" : {
+            "init" : "#tile-container",
+            "group" : "#tile-container .tile-list",
+            "item" : {
+                "container" : ".tile-grid-unit-wrapper",
+                "name" : ".js-product-title .tile-heading div",
+                "url" : ".js-product-title",
+                "price" : ".tile-price .price",
+                "oldPrice" : ".tile-price .item-price-container .price-aux s"
             }
         }
     }

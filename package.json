@@ -1,12 +1,12 @@
 {
-    "name" : "sievejs",
+    "name" : "hake",
     "version" : "0.1.0",
     "description" : "Feeding off of the bottom",
     "dependencies" : {
-        "underscore" : "1.8.3",
-        "q" : "1.4.0",
+        "underscore" : "",
+        "q" : "",
         "nightmare" : "1.8.0",
-        "cli-color" : "1.0.0"
+        "cli-color" : ""
     },
     "private" : true
 }

@@ -1,17 +1,18 @@
 /* shovelnose.js - pass item(s) to amazon */
 
-var Nm     = require('nightmare'),
-    //-------------
-    _      = require('underscore'),
-    Q      = require('q'),
-    //-------------
-    Loach  = require('./loach.js'),
-    loach  = new Loach(),
-    //-------------
-    common = require('./common.js'),
-    dbg    = new common.Debug('shovelnose.js'),
-    //-------------
-    first  = true, items, pnmq = Q.defer(); // function specific variables
+var Nm     = require('nightmare')  ,
+    _      = require('underscore') ,
+    Q      = require('q')          ,
+ //------------------------------------------------------
+    Loach  = require('./loach.js') ,
+    loach  = new Loach()           ,
+ //------------------------------------------------------
+    common = require('./common.js')            ,
+    dbg    = new common.Debug('shovelnose.js') ,
+ /*-----------------------------------------------------*
+  * function specific variables that need global scope  *
+  *-----------------------------------------------------*/
+    first  = true, items, pnmq = Q.defer() ;
 
 var Search = function(multi, arr, lastidx) {
     this.first = true;
@@ -30,7 +31,8 @@ Search.prototype.instance = function(item) {
 
     if (item !== undefined) {
         t.nm
-        .useragent('Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0') // ensure no mobile page
+        .useragent // ensure no mobile page
+         ('Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0')
         .goto('http://www.amazon.com')
         .type('input[id="twotabsearchtextbox"]', item.name)
         .click('input[value="Go"]')
@@ -47,10 +49,10 @@ Search.prototype.instance = function(item) {
             return asin = pr.getAttribute('data-asin') || '';
             }, function(ret) {
                 if (ret) {
-                    dbg.log('search for item: `' + item.name + '\' successful');
+                    dbg.log('search for item: `' + item.name + "' successful");
                     return item.asin = ret;
                 }
-                dbg.log('search for item: `' + item.name + '\' unsuccessful');
+                dbg.log('search for item: `' + item.name + "' unsuccessful");
                 return items[t.tmpidx = items.indexOf(item)] = null;
             }, item)
             .run(function(err, nm) {
@@ -58,10 +60,11 @@ Search.prototype.instance = function(item) {
                     dbg.log(err);
                     throw err;
                 }
+                /* search was successful, continue to individual page */
                 if (item.asin) {
-                    /* search was successful, continue to individual page */
                     nm
-                    .useragent('Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0') // ensure no mobile page
+                    .useragent // ensure no mobile page
+                     ('Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0')
                     .goto('http://www.amazon.com/dp/' + item.asin)
                     .wait('#productTitle')
                     .evaluate(function(item, t) {
@@ -94,7 +97,8 @@ Search.prototype.instance = function(item) {
                                 new_prod_format = true;
                             }
                             if (rankquery = details.querySelector('#SalesRank')) {
-                                var rank = /(#\d+).*(\s.*)in.*/.exec(rankquery.textContent)[0].replace(/\s*\(.*\)/, ''); // get rid of `(See Top 100 in ...)'
+                                /* replace module gets rid of `(See Top 100 in ...)' */
+                                var rank = /(#\d+).*(\s.*)in.*/.exec(rankquery.textContent)[0].replace(/\s*\(.*\)/, '');
                                 if (rank)
                                     retobj.AMZrank = rank;
                                 else
@@ -105,15 +109,14 @@ Search.prototype.instance = function(item) {
 
                             var rankranking = parseInt(/#(\d+,?)+/.exec(rank)[0].replace(/[#,]/g,''));
                             if (rankranking) {
-                                if (rankranking < 50000) {
+                                if (rankranking < 50000)
                                     retobj.AMZrankIs = 'ideal';
-                                } else if (rankranking < 100000) {
+                                else if (rankranking < 100000)
                                     retobj.AMZrankIs = 'good';
-                                } else if (rankranking < 200000) {
+                                else if (rankranking < 200000)
                                     retobj.AMZrankIs = 'fair';
-                                } else {
+                                else
                                     return 'toss'; // toss it
-                                }
                             } else {
                                 return 'failed at rankranking regexp';
                             }
@@ -225,7 +228,8 @@ Search.prototype.instance = function(item) {
                return;
            }
     } else {
-        dbg.error('fell through, something went wrong', 4); // shouldn't get here
+        /* shouldn't get here */
+        dbg.error('fell through, something went wrong', 4);
         return this.searchq.resolve(null);
     }
 };
@@ -247,6 +251,7 @@ function process_next(init, idx)
         items.splice(idx, 1);
         return items[idx] ? items[idx] : null;
     }
+
     return items[++idx] ? items[idx] : null;
 }
 
@@ -276,6 +281,7 @@ function process_next_multi(num, init, idx, islast, nextidx)
 
         return Q.all(promises);
     }
+
     return !islast ? items[nextidx]
     : items[++idx] !== undefined ? null
       : function() {

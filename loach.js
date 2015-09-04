@@ -1,114 +1,83 @@
-var _ = require('underscore');
-var Q = require('q');
-var Nightmare = require('nightmare');
-var sitesJSON = require('./sites.json');
-var common = require('./common.js');
-var dbg = new common.Debug('loach.js');
+/* loach.js - get information from sites listed in sites.json */
 
-var nightmare = new Nightmare({ loadImages : false });
-var promises = [],
-    site = {
-        name : 'Kmart',
-        baseUrl : 'http://www.kmart.com',
-        departments : [
-            {
-                name : 'Toys 50% discount',
-                url : 'http://www.kmart.com/toys-games&50/b-20007?filter=discount&subCatView=true&viewItems=50'
-            },
-            {
-                name : 'Home, Bed and Bath 50% discount',
-                url : 'http://www.kmart.com/home-bed-bath&50/b-1348478556?filter=discount&subCatView=true&viewItems=50'
-            }
-        ],
-        selectors : {
-            next : '#bottom-pagination-next > a',
-            init : '#cards-holder .card-container',
-            group : '#cards-holder',
-            item : {
-                container : '.card-container',
-                name : '.card-title a',
-                url : '.card-title a',
-                price : '.card-price',
-                oldPrice : 'card-old-price',
-                upc : '',
-                dimensions : '',
-                weight : ''
-            }
-        }
-    }
+var _         = require('underscore')                 ,
+    Q         = require('q')                          ,
+    Nightmare = require('nightmare')                  ,
+    sitesJSON = require('./sites.json')               ,
+    common    = require('./common.js')                ,
+    dbg       = new common.Debug('loach.js')          ,
+    nightmare = new Nightmare({ loadImages : false }) ,
+    promises  = []                                    ;
 
-function scrape (site, departmentIndex) {
-    var d = Q.defer(),
-        start = new Date(),
-        end;
+function scrape(site, dept) {
+    var d = Q.defer();
+    dbg.freg = 'scrape';
 
     nightmare
-    .goto(site.departments[departmentIndex].url)
+    .goto(dept.url)
     .wait(site.selectors.init)
     .scrollTo(200, 0) // in case scrolling loads more items
-    .evaluate(function (site, departmentIndex, d) {
+    .evaluate(function(site, dept, d) {
 
-        // Executed in browser scope
+        /* - Executed in browser scope - */
 
-        var items = [],
-            $next = document.querySelector(site.selectors.next),
-            nextHref = '';
-
-        var name, url, price, oldPrice, mappedItems = [];
-
-            items = /*Array.prototype.slice.call(*/document.querySelectorAll(site.selectors.group  + ' ' + site.selectors.item.container)/*)*/;
-
-            for (var i = items.length - 1; i >= 0; i--) {
+        var name, url, price, oldPrice, mapped_items = [], itemslen
+            items = document.querySelectorAll(site.selectors.group + ' '
+                                              + site.selectors.item.container);
+            if (!(itemslen = items.length))
+                return null;
+            for (var i = 0; i < itemslen; i++) {
                 var item = items.item(i);
-                name = item.querySelector(site.selectors.item.name);
-                url = item.querySelector(site.selectors.item.url);
-                price = item.querySelector(site.selectors.item.price);
-                oldPrice = item.querySelector(site.selectors.item.oldPrice);
-                mappedItems.push({
-                    name : name ? name.textContent : '',
-                    url : url ? site.baseUrl + url.getAttribute('href') : '',
-                    price : price ? price.textContent : '',
-                    oldPrice : oldPrice ? oldPrice.textContent : ''
+                name = (name = item.querySelector(site.selectors.item.name)) ?
+                    name.textContent : '';
+                /* always assume that if there is an href prop that we want that */
+                url = (url = item.querySelector(site.selectors.item.url)) ?
+                    (url.href ? url.href : url.textContent) : '';
+                p = (p = item.querySelector(site.selectors.item.price)) ?
+                    p.textContent : '';
+                oldp = (oldp = item.querySelector(site.selectors.item.oldPrice)) ?
+                    oldp.textContent : '';
+                mapped_items.push({
+                    name     : name ,
+                    url      : url  ,
+                    price    : p    ,
+                    oldPrice : oldp ,
                 });
             };
 
-            if($next) {
-                nextHref = $next.getAttribute('href');
-                if(nextHref.startsWith('/')) {
-                    nextHref = site.baseUrl + nextHref;
-                }
-            }
-
-            return mappedItems;
-        }, function (items) {
-
-            // Executed in Node scope
-
-            // Done scraping, resolve promise and pass results along
+            return mapped_items;
+        }, function(items) {
+            /*
+             * - Executed in Node scope -
+             * Done scraping, resolve promise and pass results along
+             */
             d.resolve(items);
-        }, site, departmentIndex, d
-    )
-    .run(function (err, nightmare) {
-        if(err) {
+            if (!items)
+                dbg.error('items query failed for '+site.name + ' - dept: `'+dept.name+"'");
+            else
+                dbg.log(site.name + ' - dept: ' + '`'+dept.name+"'" + ' processed successfully');
+        }, site, dept, d)
+    .run(function(err, nightmare) {
+        if (err) {
             dbg.log(err);
+            throw err;
         }
-        end = new Date();
-        dbg.log('scrape' , 'Loach done in ' + (end.valueOf() - start.valueOf()) / 1000 + ' seconds.' , true);
     });
 
     return d.promise;
 }
 
-function getResults () {
-    _.each(sitesJSON, function (site) {
-        _.each(site.departments, function (dept, index) {
-            promises.push(scrape(site, index));
+function getResults() {
+    sitesJSON.forEach(function(site) {
+        site.departments.forEach(function(dept) {
+            promises.push(scrape(site, dept));
         });
     });
+
     return Q.all(promises);
 }
 
-module.exports = function () {
+module.exports = function() {
     return {
         getResults : getResults
     }
