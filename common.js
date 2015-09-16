@@ -3,7 +3,7 @@
 if (   exports.LOGDEF    === undefined
     || exports.color     === undefined
     || exports.set_debug === undefined) {
-    exports.LOGDEF = 'sievejs.log';
+    exports.LOGDEF = 'hakejs.log';
     exports.color  = require('cli-color');
     exports.set_debug = function(val, file) {
         switch (val) {
