@@ -21,7 +21,7 @@ function scrape(site, dept) {
 
         /* - Executed in browser scope - */
 
-        var name, url, price, oldPrice, mapped_items = [], itemslen
+        var name, url, price, oldPrice, mapped_items = [], itemslen,
             items = document.querySelectorAll(site.selectors.group + ' '
                                               + site.selectors.item.container);
             if (!(itemslen = items.length))
