@@ -23,7 +23,7 @@ if (process.argv[2]) {
                 break;
             case '-i' :
                 instances = parseInt(inum ? inum : process.argv[++i]);
-                if (!instances && instances !== 0)
+                if (isNaN(instances))
                     return console.log('`-i\' requires a number');
                 else if (instances < 1)
                     return console.log('invalid number for `-i' + "'");

@@ -109,11 +109,11 @@ Search.prototype.instance = function(item) {
 
                             var rankranking = parseInt(/#(\d+,?)+/.exec(rank)[0].replace(/[#,]/g,''));
                             if (rankranking) {
-                                if (rankranking < 50000)
+                                if (rankranking < 5e4)
                                     retobj.AMZrankIs = 'ideal';
-                                else if (rankranking < 100000)
+                                else if (rankranking < 1e5)
                                     retobj.AMZrankIs = 'good';
-                                else if (rankranking < 200000)
+                                else if (rankranking < 2e5)
                                     retobj.AMZrankIs = 'fair';
                                 else
                                     return 'toss'; // toss it
